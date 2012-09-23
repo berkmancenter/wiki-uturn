@@ -22,7 +22,7 @@ Like any other extension, drop the UTurn folder in /extensions; then include the
 
 ## Usage
 
-Once installed, simply visit http://localhost/mediawiki/index.php/Special:UTurn while logged in as a sysop to UTurn the wiki.
+Once installed, simply visit `myWiki/Special:UTurn` while logged in as a sysop to UTurn the wiki.
 
 ## Details
 
