@@ -22,7 +22,7 @@ Like any other extension, drop the UTurn folder in /extensions; then include the
 
 ## Usage
 
-Once installed, simply visit [http://localhost/mediawiki/index.php/Special:UTurn] while logged in as a sysop to UTurn the wiki.
+Once installed, simply visit http://localhost/mediawiki/index.php/Special:UTurn while logged in as a sysop to UTurn the wiki.
 
 ## Details
 
@@ -48,9 +48,9 @@ UTurn deletes pages which weren't created before the date. The reason being that
  * Define better timelimit in SpecialUTurn.php
  * Undelete pages (possibly by looping through delete log)
  * Prevent simultaneous UTurns:
- ** On UTurn start, create page in MediaWiki namespace.
- ** on end, delete it. 
- ** Do not start another UTurn if the page exists.
+     * On UTurn start, create page in MediaWiki namespace.
+     * on end, delete it. 
+     * Do not start another UTurn if the page exists.
 
 ## Contributors
 
