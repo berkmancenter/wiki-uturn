@@ -4,6 +4,8 @@
 
 0.1
 
+**Note: Given the extremely early version, please avoid using UTurn directly on a production wiki. Use it on a test wiki, once you discover it has no problems, then deploy it on a production wiki. If you find problems, submit an issue with your wiki settings, the problem, and the log entry.**
+
 ## About
 
 There are a handful of situations when a MediaWiki install has to be locked for some period of time. Unfortunately, many times people forget to lock their wikis; they forget to close registration; they forget to keep moderating. An example might be a course website during the summer: once final exams come around, the professor forgets to close their wiki's registration, or moderate it. Then when they return to it at the start of a new semseter, they realize that spam bots have infested it and filled the pages with links and spam.
