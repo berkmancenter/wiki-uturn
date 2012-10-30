@@ -12,9 +12,9 @@ There are a handful of situations when a MediaWiki install has to be locked for 
 
 Then, they realize that they should of blocked registration, or done something. But by then it is too late. By then the spam is there, and now they are trying to figure out what to do.
 
-*Enter UTurn.*
-
 **UTurn is a MediaWiki extension that allows sysops to return a wiki to how it was at a specified point in time.**
+
+UTurn is a standard MediaWiki extension written in PHP with a tiny bit of javascript for the front end.
 
 ## Installation
 
