@@ -26,6 +26,10 @@ Like any other extension, drop the UTurn folder in /extensions; then include the
 
 Once installed, simply visit `myWiki/Special:UTurn` while logged in as a sysop to UTurn the wiki.
 
+## Lookback 
+
+[https://github.com/tomasreimers/wiki-lookback](https://github.com/tomasreimers/wiki-lookback)
+
 ## Details
 
 UTurning is very hard to undo, please contemplate deeply about whether you need to UTurn to a specific date. 
