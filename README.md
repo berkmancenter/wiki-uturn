@@ -2,7 +2,7 @@
 
 ## Version
 
-0.1
+0.2
 
 **Note: Given the extremely early version, please avoid using UTurn directly on a production wiki. Use it on a test wiki, once you discover it has no problems, then deploy it on a production wiki. If you find problems, submit an issue with your wiki settings, the problem, and the log entry.**
 
@@ -58,13 +58,19 @@ UTurn deletes pages which weren't created before the date. The reason being that
      * on end, delete it. 
      * Do not start another UTurn if the page exists.
 
+## Changelog 
+
+0.2 
+
+ * Fixes ALL namespaces
+
 ## Contributors
 
  * Tomas Reimers
 
 ## Copyright and License
 
-(C) President and Fellows of Harvard College, 2012
+(C) President and Fellows of Harvard College, 2013
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
