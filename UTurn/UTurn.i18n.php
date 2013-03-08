@@ -2,7 +2,7 @@
 
 /*
  * UTurn 
- * v0.2
+ * v0.3
  * 
  * Tomas Reimers
  * 
@@ -16,8 +16,12 @@ $messages = array();
  */
 $messages['en'] = array(
     'uturn' => 'UTurn',
-    'whentouturn' => 'When would you like to revert to?',
-    'uturn-desc' => 'Gives sysops the ability to return the wiki to a point in time.',
-    'uturn-date' => 'When do you want to UTurn to? (MM/DD/YYYY HH:MM:SS)',
-    'uturn-submit' => 'UTurn to this date'
+    'uturn-desc' => 'Gives sysops the ability to return the wiki to a specific point in time.',
+    'uturn-date-key' => 'When do you want to UTurn to?',
+    'uturn-date-desc' => 'Please have the date in the format "MM/DD/YYYY HH:MM:SS".',
+    'uturn-user-key' => 'Delete users as well?',
+    'uturn-user-desc' => 'This will ban all users registered after the point you are UTurning to.',
+    'uturn-delete-key' => 'Delete pages?',
+    'uturn-delete-desc' => 'When UTurn finds a page that didn\'t exist before the point you are UTurning to, should it change it to be blank (default) or delete it?',
+    'uturn-submit' => 'UTurn.'
 );

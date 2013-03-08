@@ -2,7 +2,7 @@
 
 /*
  * UTurn 
- * v0.2
+ * v0.3
  * 
  * Tomas Reimers
  * 
@@ -18,8 +18,8 @@ $wgExtensionCredits['specialpage'][] = array(
     'name'           => 'UTurn',
     'descriptionmsg' => 'uturn-desc',
     'author'         => 'Tomas Reimers',
-    'url'            => 'https://github.com/tomasreimers/wiki-uturn-php',
-    'version'        => 0.1,
+    'url'            => 'https://github.com/berkmancenter/wiki-uturn',
+    'version'        => 0.3,
 );
 
 $dir = dirname( __FILE__ ) . '/';
@@ -36,10 +36,13 @@ $wgGroupPermissions['sysop']['uturn'] = true;
 $wgAvailableRights[] = 'uturn';
 
 $wgResourceModules['ext.uturn'] = array(
-    'localBasePath' => dirname( __FILE__ ) . '/',
-    'remoteExtPath' => 'UTurn/',
+    'localBasePath' => dirname( __FILE__ ),
+    'remoteExtPath' => 'UTurn',
     'scripts' => array(
         'ext.uturn.js'
+    ),
+    'styles' => array(
+        'ext.uturn.css'
     ),
     'messages' => array()
 );

@@ -1,6 +1,6 @@
 /*
  * UTurn 
- * v0.2
+ * v0.3
  * 
  * Tomas Reimers
  * 
@@ -17,8 +17,8 @@ $(document).ready(function (){
 
             // form can't be empty
             if (submitField.value == ''){
-                $(submitField).css('border-color', '#000000');
-                return;
+                $(submitField).css('border-color', '#FF0000');
+                return false;
             }
 
             var timestamp;
@@ -43,7 +43,7 @@ $(document).ready(function (){
                 // can't do future time
                 if (timestamp > ((new Date()).getTime() / 1000)){
                     $(submitField).css('border-color', '#FF0000');
-                    return;
+                    return false;
                 }
             }
             // date was in invalid format
@@ -54,17 +54,28 @@ $(document).ready(function (){
 
             // If did not return before this, then request is valid
 
-            $('#uturn-status').html('UTurning...').css('color', '#999999');
+            $('#uturn-status').html('UTurning...');
             // easy way to select both the button and the textfield
             $('#uturn-form input').attr('disabled', 'disabled');
 
-            $.ajax({
-                url: '',
-                data: {
+            // get properties to send
+            var data_to_send = {
                     action: 'submit',
                     t: timestamp,
                     editToken: mediaWiki.user.tokens.values.editToken
-                },
+                };
+
+            if ($(this).find('#uturn-delete').is(":checked")){
+                data_to_send["deletePages"] = "deletePages";
+            }
+            if ($(this).find('#uturn-user').is(":checked")){
+                data_to_send["deleteUsers"] = "deleteUsers";
+            }
+
+            // send the ajax
+            $.ajax({
+                url: '',
+                data: data_to_send,
                 type: 'POST',
                 complete: function (){
                     $('#uturn-status').html('');

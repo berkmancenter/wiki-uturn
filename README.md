@@ -2,7 +2,7 @@
 
 ## Version
 
-0.2
+0.3
 
 **Note: Given the extremely early version, please avoid using UTurn directly on a production wiki. Use it on a test wiki, once you discover it has no problems, then deploy it on a production wiki. If you find problems, submit an issue with your wiki settings, the problem, and the log entry.**
 
@@ -59,6 +59,11 @@ UTurn deletes pages which weren't created before the date. The reason being that
      * Do not start another UTurn if the page exists.
 
 ## Changelog 
+
+0.3
+
+ * Bans users registered after the date
+ * Prettied up UI
 
 0.2 
 

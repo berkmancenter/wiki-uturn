@@ -1,0 +1,49 @@
+/*
+ * UTurn 
+ * v0.3
+ * 
+ * Tomas Reimers
+ *
+ * CSS needed to support the form.
+ */
+
+.uturn_description {
+    color: #999;
+    font-style: italic;
+    padding: 20px;
+}
+
+.uturn_option_pair {
+    padding: 10px 0;
+}
+
+.uturn_option_title {
+    display: inline-block;
+    vertical-align: top;
+    font-weight: bold;
+    width: 300px;
+    margin-right: 10px;
+}
+
+.uturn_option_input {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.uturn_option_description {
+    color: #999;
+    font-style: italic;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #999;
+}
+.uturn_buttons {
+    margin-top: 10px;
+}
+
+#uturn-status {
+    color: #999;
+    font-style: italic;
+    display: inline-block;
+    margin-left: 10px;
+    vertical-align: middle;
+}

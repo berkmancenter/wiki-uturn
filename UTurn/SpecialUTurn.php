@@ -2,11 +2,11 @@
 
 /*
  * UTurn 
- * v0.2
+ * v0.3
  * 
  * Tomas Reimers
  *
- * Constructor of the special page; also holds the 
+ * Constructor of the special page; also holds the actual function.
  */
 
 class SpecialUTurn extends SpecialPage {
@@ -62,6 +62,7 @@ class SpecialUTurn extends SpecialPage {
         $out = $this->getOutput();
         $out->addModules( 'ext.uturn' );
         $out->addHTML(
+            '<div class="uturn_description">' . $this->msg('uturn-desc')->text() . '</div>' .
             Xml::openElement(
                 'form',
                 array(
@@ -69,17 +70,27 @@ class SpecialUTurn extends SpecialPage {
                     'method' => 'post',
                     'id' => 'uturn-form'
                 )
-            )
-            . '<table><tr>'
-                . '<td>' . Xml::label( $this->msg('uturn-date')->text(), 'uturn-date' ) . '</td>'
-                . '<td>' . Xml::input( 'uturndate', 40, '', array( 'id' => 'uturn-date' ) ) . '</td>'
-                . '<td id="uturn-status"></td>'
-            . '</tr><tr>'
-                . '<td></td>'
-                . '<td>' . Xml::submitButton( $this->msg('uturn-submit')->text(), array('id' => 'uturn-submit') ) . '</td>'
-                . '<td></td>'
-            . '</tr></table>'
-            . Xml::closeElement( 'form' )
+            ) .
+                '<div class="uturn_option_pair">' .
+                    '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-date-key')->text(), 'uturn-date' ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::input( 'uturndate', 40, '', array( 'id' => 'uturn-date' ) ) . '</div>' .
+                '</div>' .
+                '<div class="uturn_option_description">' . $this->msg('uturn-date-desc')->text() . '</div>' . 
+                '<div class="uturn_option_pair">' .
+                    '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-delete-key')->text(), 'uturn-delete' ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::check( 'uturndelete', false, array( 'id' => 'uturn-delete' ) ) . '</div>' .
+                '</div>' .
+                '<div class="uturn_option_description">' . $this->msg('uturn-delete-desc')->text() . '</div>' . 
+                '<div class="uturn_option_pair">' .
+                    '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-user-key')->text(), 'uturn-user' ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::check( 'uturnuser', false, array( 'id' => 'uturn-user' ) ) . '</div>' .
+                '</div>' .
+                '<div class="uturn_option_description">' . $this->msg('uturn-user-desc')->text() . '</div>' . 
+                '<div class="uturn_buttons">' . 
+                    Xml::submitButton( $this->msg('uturn-submit')->text(), array('id' => 'uturn-submit') ) . 
+                    '<div id="uturn-status"></div>' .
+                '</div>' . 
+            Xml::closeElement( 'form' )
         );
     }
 
@@ -93,14 +104,91 @@ class SpecialUTurn extends SpecialPage {
 
         $revertTimestamp = intval( $req->getVal( 't' ) );
         // I may implement an option (in the form of a checkbox) for this later
-        $deletePages = true; 
-        // unsetting as many vars as possible, because there have been memory errors before
-        unset( $req );
+        $deletePages = ($req->getVal( 'deletePages' ) != NULL); 
 
         if ( $revertTimestamp > time() ) {
             return "Can't go into the future.";
         }
 
+        $this->revertPages($revertTimestamp, $deletePages);
+        if ($req->getVal( 'deleteUsers' ) != NULL){
+            $this->revertUsers($revertTimestamp);
+        }
+    }
+
+    /* 
+     * Deals with people
+     */ 
+
+    function revertUsers($revertTimestamp){
+        $allUsers = array();
+        $aufrom = '';
+        // loop until completion (at which point we will break)
+        // I don't define a limit because at this point the total page count is unknown
+        while ( true ){
+
+            // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
+            // I arbitrarily chose 30s; it is in the todo to update this
+            set_time_limit( 30 );
+
+            // I only load one page at a time because internal requests are cheap, and there have been memory errors
+            $params = array(
+                'action' => 'query',
+                'list'=> 'allusers',
+                'aulimit'=> '1',
+                'auexcludegroup' => 'bureaucrat|sysop',
+                'auprop' => 'registration',
+                'aufrom'=> $aufrom
+            );
+
+            $request = new FauxRequest( $params, true );
+            $api = new ApiMain( $request );
+            $api->execute();
+            $result = $api->getResult();
+            $rootData = $result->getData();
+            
+            $allUsers = $rootData['query']['allusers'];
+            // I implemented a foreach, so that the aplimit above could theoritically be increased
+            foreach ( $allUsers as $user ) {
+                if ( array_key_exists( 'registration', $user ) ) {
+                    if ($user["registration"] != ""){
+                        $registered = strtotime($user["registration"]);
+                        if ($registered >= $revertTimestamp){
+                            $userName = $user["name"];
+                            $userId = $user["userid"];
+                            $user = User::newFromId($userId);
+
+                            $currentUser = User::newFromSession();
+
+                            $block = new Block(
+                                $user,
+                                $userId,
+                                $currentUser->getId(),
+                                $reason = 'UTurn to ' . $revertTimestamp,
+                                0,
+                                0,
+                                'infinity'
+                            );
+                            $block->insert();
+                        }
+                    }
+                }
+            }
+            if ( array_key_exists( 'query-continue', $rootData ) ) {
+                $aufrom = $rootData['query-continue']['allusers']['aufrom'];
+            }
+            else {
+                // at this point the UTurn is complete, and we can break out of the while(true)
+                break;
+            }
+        } 
+    }
+
+    /* 
+     * Deals with pages, also deletes files (as files are handled the same way as pages)
+     */ 
+
+    function revertPages($revertTimestamp, $deletePages){
         // get namespaces
         $namespaceParams = array(
             'action' => 'query',
