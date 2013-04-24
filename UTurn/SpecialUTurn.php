@@ -261,7 +261,13 @@ class SpecialUTurn extends SpecialPage {
                         unset( $result );
 
                         $revisions = $data['query']['pages'][(string)$page['pageid']]['revisions'];
-
+                        
+                        // skip if page revisions cannot be accessed
+                        if ( !is_array( $revisions ) ){
+                            $theRevision = array( 'skip' => 'true' );
+                            break;
+                        }
+                        
                         // again, the rvlimit could theoretically be increased 
                         foreach( $revisions as $revision ) {
                             $revisionTimestamp = strtotime( $revision['timestamp'] );
@@ -279,37 +285,38 @@ class SpecialUTurn extends SpecialPage {
                             $theRevision = array( 'delete' => 'true' );
                         }
                     }
-                    $content = '';
-                    if ( !array_key_exists( 'delete', $theRevision ) ) {
-                        // lazy load the content to prevent memory overflows
-                        $contentParams = array(
-                            'action' => 'query',
-                            'prop' => 'revisions',
-                            'titles' => $page['title'],
-                            'rvlimit'=> '1',
-                            'rvprop'=> 'content',
-                            'rvdir' => 'older',
-                            'rvstartid' => $theRevision['revid']
-                        );
-                        $contentRequest = new FauxRequest( $contentParams, true );
-                        $contentAPI = new ApiMain( $contentRequest );
-                        $contentAPI->execute();
-                        $contentResult = $contentAPI->getResult();
-                        $contentData = $contentResult->getData();
-                        $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['*'];
+                    if ( !array_key_exists( 'skip', $theRevision ) ){
+                        $content = '';
+                        if ( !array_key_exists( 'delete', $theRevision ) ) {
+                            // lazy load the content to prevent memory overflows
+                            $contentParams = array(
+                                'action' => 'query',
+                                'prop' => 'revisions',
+                                'titles' => $page['title'],
+                                'rvlimit'=> '1',
+                                'rvprop'=> 'content',
+                                'rvdir' => 'older',
+                                'rvstartid' => $theRevision['revid']
+                            );
+                            $contentRequest = new FauxRequest( $contentParams, true );
+                            $contentAPI = new ApiMain( $contentRequest );
+                            $contentAPI->execute();
+                            $contentResult = $contentAPI->getResult();
+                            $contentData = $contentResult->getData();
+                            $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['*'];
+                        }
+    
+                        $summary = 'UTurn to ' . $revertTimestamp;
+                        $currentPage = new WikiPage( Title::newFromText( $page['title'] ), 0 );
+                        if ( $deletePages && $content == '' ) {
+                            $errors = array();
+                            // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
+                            $currentPage->doDeleteArticle( $summary, false, 0, true, $errors, User::newFromSession() );
+                        }
+                        else {
+                            $currentPage->doEdit( $content, $summary, EDIT_UPDATE, false, User::newFromSession() );
+                        }
                     }
-
-                    $summary = 'UTurn to ' . $revertTimestamp;
-                    $currentPage = new WikiPage( Title::newFromText( $page['title'] ), 0 );
-                    if ( $deletePages && $content == '' ) {
-                        $errors = array();
-                        // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
-                        $currentPage->doDeleteArticle( $summary, false, 0, true, $errors, User::newFromSession() );
-                    }
-                    else {
-                        $currentPage->doEdit( $content, $summary, EDIT_UPDATE, false, User::newFromSession() );
-                    }
-
                 }
                 if ( array_key_exists( 'query-continue', $rootData ) ) {
                     $apfrom = $rootData['query-continue']['allpages']['apfrom'];
