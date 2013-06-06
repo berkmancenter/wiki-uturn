@@ -245,7 +245,7 @@ class SpecialUTurn extends SpecialPage {
                         $params = array(
                             'action' => 'query',
                             'prop' => 'revisions',
-                            'titles' => $page['title'],
+                            'pageids' => $page['pageid'],
                             'rvlimit'=> '1',
                             'rvprop'=> 'timestamp|ids',
                             'rvdir' => 'older'
@@ -292,7 +292,7 @@ class SpecialUTurn extends SpecialPage {
                             $contentParams = array(
                                 'action' => 'query',
                                 'prop' => 'revisions',
-                                'titles' => $page['title'],
+                                'pageids' => $page['pageid'],
                                 'rvlimit'=> '1',
                                 'rvprop'=> 'content',
                                 'rvdir' => 'older',
@@ -307,7 +307,7 @@ class SpecialUTurn extends SpecialPage {
                         }
     
                         $summary = 'UTurn to ' . $revertTimestamp;
-                        $currentPage = new WikiPage( Title::newFromText( $page['title'] ), 0 );
+                        $currentPage = WikiPage::newFromID( $page['pageid'] );
                         if ( $deletePages && $content == '' ) {
                             $errors = array();
                             // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
