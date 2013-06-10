@@ -117,7 +117,7 @@ class SpecialUTurn extends SpecialPage {
     }
 
     /* 
-     * Deals with people
+     * Bans user accounts if created after the UTurn date (if that option was checked).
      */ 
 
     function revertUsers($revertTimestamp){
@@ -128,7 +128,6 @@ class SpecialUTurn extends SpecialPage {
         while ( true ){
 
             // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
-            // I arbitrarily chose 30s; it is in the todo to update this
             set_time_limit( 30 );
 
             // I only load one page at a time because internal requests are cheap, and there have been memory errors
@@ -148,7 +147,7 @@ class SpecialUTurn extends SpecialPage {
             $rootData = $result->getData();
             
             $allUsers = $rootData['query']['allusers'];
-            // I implemented a foreach, so that the aplimit above could theoritically be increased
+            // I implemented a foreach, so that the aulimit above could theoritically be increased
             foreach ( $allUsers as $user ) {
                 if ( array_key_exists( 'registration', $user ) ) {
                     if ($user["registration"] != ""){
@@ -205,7 +204,7 @@ class SpecialUTurn extends SpecialPage {
 
         foreach ( $namespaces as $namespace ){
 
-            // skip media and special
+            // skip media and special namespaces
             if ($namespace < 0){
                 continue;
             }
@@ -217,7 +216,6 @@ class SpecialUTurn extends SpecialPage {
             while ( true ){
 
                 // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
-                // I arbitrarily chose 30s; it is in the todo to update this
                 set_time_limit( 30 );
 
                 // I only load one page at a time because internal requests are cheap, and there have been memory errors

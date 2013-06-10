@@ -2,9 +2,7 @@
 
 ## Version
 
-0.3
-
-**Note: Given the extremely early version, please avoid using UTurn directly on a production wiki. Use it on a test wiki, once you discover it has no problems, then deploy it on a production wiki. If you find problems, submit an issue with your wiki settings, the problem, and the log entry.**
+1.0
 
 ## About
 
@@ -30,35 +28,30 @@ Once installed, simply visit `myWiki/Special:UTurn` while logged in as a sysop t
 
 [https://github.com/tomasreimers/wiki-lookback](https://github.com/tomasreimers/wiki-lookback)
 
+Lookback is a [MediaWiki Gadget](http://www.mediawiki.org/wiki/Extension:Gadgets) that allows you to view how a wiki was at a previous point in time (without UTurning it). 
+
+Lookback is useful to preview a wiki before you decide to UTurn it.
+
 ## Details
 
-UTurning is very hard to undo, please contemplate deeply about whether you need to UTurn to a specific date. 
+UTurn works by listing through all the pages in the wiki and creating a new revision that matches the text of the page at the time you are UTurning to.
 
-Basically, UTurn works by listing through all the pages in the wiki. For every page it checks if the page existed before the date; if it didn't, it is deleted; if it did, the page is updated to the content of the last revision prior to the date you are reverting to.
+*For more details see the inline comments.*
 
-## Design Decisions
+## Files
 
-*No Lock*
-
-At the moment, there is no lock on UTurning (i.e. two sysops could hypothetically UTurn at the same time to different points). This was done because UTurn is built for small-medium sized wikis. In those cases, typically there is one sysop, or a couple of them with very good communication. It simply doesn't seem likely that the page would be reverted to two different times by different sysops, at the same time.
-
-However, it is on the Todo to add a lock.
-
-*Deleting Pages*
-
-UTurn deletes pages which weren't created before the date. The reason being that many spammers and bots create pages with spammy titles. To combat this, I simply delete all those pages. *NOTE: This means you can NOT UTurn a UTurn, to undo that first UTurn because a UTurn does not undelete pages.*
-
-## Todo
-
- * Log errors
- * Define better timelimit in SpecialUTurn.php
- * Undelete pages (possibly by looping through delete log)
- * Prevent simultaneous UTurns:
-     * On UTurn start, create page in MediaWiki namespace.
-     * on end, delete it. 
-     * Do not start another UTurn if the page exists.
+ * *ext.uturn.js*: Javascript for UTurn page that submits AJAX request to perform the actual UTurn.
+ * *SpecialUTurn.php*: Main File; contains all UTurn code.
+ * *UTurn.alias.php*: Aliases name of special page for other languages.
+ * *UTurn.i18n.php*: Internationalization.
+ * *UTurn.php*: Metadata and includes all the other files.
+ * *ext.uturn.css*:  Stylizes the admin page.
 
 ## Changelog 
+
+1.0
+
+ * Passes pages by ID rather than by title.
 
 0.3
 
