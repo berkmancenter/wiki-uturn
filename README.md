@@ -24,6 +24,12 @@ Like any other extension, drop the UTurn folder in /extensions; then include the
 
 Once installed, simply visit `myWiki/Special:UTurn` while logged in as a sysop to UTurn the wiki.
 
+## Maintenance Scripts of Interest
+
+ * [*Cleanup Titles*](http://www.mediawiki.org/wiki/Manual:CleanupTitles.php): If you are having trouble deleting pages with strange titles (UTF-8 sequences), as described here: www.gossamer-threads.com/lists/wiki/mediawiki/274451, it is likely that the titles need to be cleaned up.
+
+ * [*Reducing the Size of the Database*](http://www.mediawiki.org/wiki/Manual:Reduce_size_of_the_database): Removing/archiving deleted pages from the database and can shrink it significantly. 
+
 ## Lookback 
 
 [https://github.com/tomasreimers/wiki-lookback](https://github.com/tomasreimers/wiki-lookback)
