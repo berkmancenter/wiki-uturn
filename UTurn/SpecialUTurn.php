@@ -307,6 +307,11 @@ class SpecialUTurn extends SpecialPage {
                         $summary = 'UTurn to ' . $revertTimestamp;
                         $currentPage = WikiPage::newFromID( $page['pageid'] );
                         if ( $deletePages && $content == '' ) {
+                            if ($namespace == NS_FILE){
+                                $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
+                                $old = "";
+                                FileDeleteForm::doDelete( $currentPage->mTitle, $file, $old, $summary, false );
+                            }
                             $errors = array();
                             // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
                             $currentPage->doDeleteArticle( $summary, false, 0, true, $errors, User::newFromSession() );
