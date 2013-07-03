@@ -76,22 +76,65 @@ class SpecialUTurn extends SpecialPage {
                     '<div class="uturn_option_input">' . Xml::input( 'uturndate', 40, '', array( 'id' => 'uturn-date' ) ) . '</div>' .
                 '</div>' .
                 '<div class="uturn_option_description">' . $this->msg('uturn-date-desc')->text() . '</div>' . 
+
                 '<div class="uturn_option_pair">' .
                     '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-delete-key')->text(), 'uturn-delete' ) . '</div>' .
                     '<div class="uturn_option_input">' . Xml::check( 'uturndelete', false, array( 'id' => 'uturn-delete' ) ) . '</div>' .
                 '</div>' .
                 '<div class="uturn_option_description">' . $this->msg('uturn-delete-desc')->text() . '</div>' . 
+
                 '<div class="uturn_option_pair">' .
                     '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-user-key')->text(), 'uturn-user' ) . '</div>' .
                     '<div class="uturn_option_input">' . Xml::check( 'uturnuser', false, array( 'id' => 'uturn-user' ) ) . '</div>' .
                 '</div>' .
                 '<div class="uturn_option_description">' . $this->msg('uturn-user-desc')->text() . '</div>' . 
+
+                '<div class="uturn_option_pair">' .
+                    '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-whitelist-namespaces-key')->text(), 'uturn-whitelist-namespaces' ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::input( 'uturnwhitelistnamespaces', 40, '', array( 'id' => 'uturn-whitelist-namespaces' ) ) . '</div>' .
+                '</div>' .
+                '<div class="uturn_option_description">' . $this->msg('uturn-whitelist-namespaces-desc')->text() . '</div>' . 
+
+                '<div class="uturn_option_pair">' .
+                    '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-whitelist-pages-key')->text(), 'uturn-whitelist-pages' ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::input( 'uturnwhitelistpages', 40, '', array( 'id' => 'uturn-whitelist-pages' ) ) . '</div>' .
+                '</div>' .
+                '<div class="uturn_option_description">' . $this->msg('uturn-whitelist-pages-desc')->text() . '</div>' . 
+
+                '<div class="uturn_option_pair">' .
+                    '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-whitelist-users-key')->text(), 'uturn-whitelist-users' ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::input( 'uturnwhitelistusers', 40, '', array( 'id' => 'uturn-whitelist-users' ) ) . '</div>' .
+                '</div>' .
+                '<div class="uturn_option_description">' . $this->msg('uturn-whitelist-users-desc')->text() . '</div>' . 
+
                 '<div class="uturn_buttons">' . 
                     Xml::submitButton( $this->msg('uturn-submit')->text(), array('id' => 'uturn-submit') ) . 
                     '<div id="uturn-status"></div>' .
                 '</div>' . 
             Xml::closeElement( 'form' )
         );
+    }
+
+    /*
+     * Filtering function for inputs passed as arrays
+     */ 
+
+    function parse_value_list($input) {
+
+        $exploded_input = explode("|", $input);
+
+        $trimmed_array = array_map(function ($item){
+
+            return trim(urldecode($item));
+
+        }, $exploded_input);
+
+        $filtered_array = array_filter($trimmed_array, function ($item){
+            return $item != "";
+        });
+
+        return $filtered_array;
+
     }
 
     /*
@@ -103,14 +146,18 @@ class SpecialUTurn extends SpecialPage {
         $req = $this->getRequest();
 
         $revertTimestamp = intval( $req->getVal( 't' ) );
-        // I may implement an option (in the form of a checkbox) for this later
+        
         $deletePages = ($req->getVal( 'deletePages' ) != NULL); 
+
+        $whitelistNamespaces = $this->parse_value_list($req->getVal( 'whitelistNamespaces' )); 
+        $whitelistPages = $this->parse_value_list($req->getVal( 'whitelistPages' )); 
+        $whitelistUsers = $this->parse_value_list($req->getVal( 'whitelistUsers' )); 
 
         if ( $revertTimestamp > time() ) {
             return "Can't go into the future.";
         }
 
-        $this->revertPages($revertTimestamp, $deletePages);
+        $this->revertPages($revertTimestamp, $deletePages, $whitelistNamespaces, $whitelistPages, $whitelistUsers);
         if ($req->getVal( 'deleteUsers' ) != NULL){
             $this->revertUsers($revertTimestamp);
         }
@@ -184,10 +231,10 @@ class SpecialUTurn extends SpecialPage {
     }
 
     /* 
-     * Deals with pages, also deletes files (as files are handled the same way as pages)
+     * Deals with pages, also deletes files.
      */ 
 
-    function revertPages($revertTimestamp, $deletePages){
+    function revertPages($revertTimestamp, $deletePages, $whitelistNamespaces, $whitelistPages, $whitelistUsers){
         // get namespaces
         $namespaceParams = array(
             'action' => 'query',
@@ -205,7 +252,7 @@ class SpecialUTurn extends SpecialPage {
         foreach ( $namespaces as $namespace ){
 
             // skip media and special namespaces
-            if ($namespace < 0){
+            if ($namespace < 0 || in_array($namespace, $whitelistNamespaces)){
                 continue;
             }
 
@@ -236,6 +283,11 @@ class SpecialUTurn extends SpecialPage {
                 $allPages = $rootData['query']['allpages'];
                 // I implemented a foreach, so that the aplimit above could theoritically be increased
                 foreach ( $allPages as $page ) {
+
+                    if ( in_array( $page['title'], $whitelistPages) ){
+                        continue;
+                    }
+
                     $theRevision = NULL;
                     $startAt = NULL;
                     while ( is_null( $theRevision ) ) {
@@ -245,7 +297,7 @@ class SpecialUTurn extends SpecialPage {
                             'prop' => 'revisions',
                             'pageids' => $page['pageid'],
                             'rvlimit'=> '1',
-                            'rvprop'=> 'timestamp|ids',
+                            'rvprop'=> 'timestamp|ids|user',
                             'rvdir' => 'older'
                         );
                         if ( !is_null( $startAt ) ) {
@@ -269,7 +321,7 @@ class SpecialUTurn extends SpecialPage {
                         // again, the rvlimit could theoretically be increased 
                         foreach( $revisions as $revision ) {
                             $revisionTimestamp = strtotime( $revision['timestamp'] );
-                            if ( $revisionTimestamp <= $revertTimestamp ) {
+                            if ( $revisionTimestamp <= $revertTimestamp || in_array($revision['user'], $whitelistUsers)) {
                                 $theRevision = $revision;
                                 break;
                             }

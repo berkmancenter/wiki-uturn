@@ -62,7 +62,10 @@ $(document).ready(function (){
             var data_to_send = {
                     action: 'submit',
                     t: timestamp,
-                    editToken: mediaWiki.user.tokens.values.editToken
+                    editToken: mediaWiki.user.tokens.values.editToken,
+                    whitelistNamespaces: $(this).find('#uturn-whitelist-namespaces').val(),
+                    whitelistPages: $(this).find('#uturn-whitelist-pages').val(),
+                    whitelistUsers: $(this).find('#uturn-whitelist-users').val()
                 };
 
             if ($(this).find('#uturn-delete').is(":checked")){
