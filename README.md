@@ -55,6 +55,10 @@ UTurn works by listing through all the pages in the wiki and creating a new revi
 
 ## Changelog 
 
+1.1
+
+ * Whitelists added
+
 1.0
 
  * Passes pages by ID rather than by title.

@@ -2,17 +2,17 @@
 
 /*
  * UTurn 
- * v0.3
+ * v1.1
  * 
  * Tomas Reimers
  * 
- * Internationalization file, currently only contains english.
+ * Internationalization file.
  */
 
 $messages = array();
 
 /*
- * English (English)
+ * English
  */
 $messages['en'] = array(
     'uturn' => 'UTurn',
@@ -30,4 +30,26 @@ $messages['en'] = array(
     'uturn-whitelist-pages-desc' => 'A list of pages to skip, delimited by a "|" (Pipe symbol).',
     'uturn-whitelist-users-key' => 'Whitelist Edits Made By Users:',
     'uturn-whitelist-users-desc' => 'A list of users whose edits to skip, delimited by a "|" (Pipe symbol).'
+);
+
+/*
+ * Message Documentation
+ */
+
+$messages['qqq'] = array(
+    'uturn' => 'The title.',
+    'uturn-desc' => 'The description of the plugin.',
+    'uturn-date-key' => 'The prompt asking when to UTurn to.',
+    'uturn-date-desc' => 'A description of the above prompt specifying that time should be inputted in the form "MM/DD/YYYY HH:MM:SS".',
+    'uturn-user-key' => 'A prompt asking whether to delete users as well.',
+    'uturn-user-desc' => 'A description of what deleting users entails.',
+    'uturn-delete-key' => 'A prompt asking whether to delete pages as well.',
+    'uturn-delete-desc' => 'A description of the above.',
+    'uturn-submit' => 'The submit button for the UTurn form.',
+    'uturn-whitelist-namespaces-key' => 'The prompt for which namespaces to whitelist.',
+    'uturn-whitelist-namespaces-desc' => 'A description of the above, and reminds users to delimit with a pipe symbol.',
+    'uturn-whitelist-pages-key' => 'The prompt for which pages to whitelist.',
+    'uturn-whitelist-pages-desc' => 'A description of the above, and reminds users to delimit with a pipe symbol.',
+    'uturn-whitelist-users-key' => 'The prompt for which users to whitelist.',
+    'uturn-whitelist-users-desc' => 'A description of the above, and reminds users to delimit with a pipe symbol.'
 );

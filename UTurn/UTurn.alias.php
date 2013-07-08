@@ -2,7 +2,7 @@
 
 /*
  * UTurn 
- * v0.3
+ * v1.1
  * 
  * Tomas Reimers
  * 
