@@ -336,7 +336,7 @@ class SpecialUTurn extends SpecialPage {
                         }
                     }
                     if ( !array_key_exists( 'skip', $theRevision ) ){
-                        $content = '';
+
                         if ( !array_key_exists( 'delete', $theRevision ) ) {
                             // lazy load the content to prevent memory overflows
                             $contentParams = array(
@@ -358,15 +358,17 @@ class SpecialUTurn extends SpecialPage {
     
                         $summary = 'UTurn to ' . $revertTimestamp;
                         $currentPage = WikiPage::newFromID( $page['pageid'] );
-                        if ( $deletePages && $content == '' ) {
-                            if ($namespace == NS_FILE){
-                                $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
-                                $old = "";
-                                FileDeleteForm::doDelete( $currentPage->mTitle, $file, $old, $summary, false );
-                            }
+                        if ( $deletePages && array_key_exists( 'delete', $theRevision ) ) {
+
                             $errors = array();
                             // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
                             $currentPage->doDeleteArticle( $summary, false, 0, true, $errors, User::newFromSession() );
+
+                            if ($namespace == NS_FILE){
+                                $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
+                                $file->delete( $reason, false );
+                            }
+
                         }
                         else {
                             $currentPage->doEdit( $content, $summary, EDIT_UPDATE, false, User::newFromSession() );
