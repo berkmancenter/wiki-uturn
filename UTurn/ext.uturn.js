@@ -1,6 +1,6 @@
 /*
  * UTurn 
- * v1.1
+ * v1.2
  * 
  * Tomas Reimers
  * 
@@ -73,6 +73,9 @@ $(document).ready(function (){
             }
             if ($(this).find('#uturn-user').is(":checked")){
                 data_to_send["deleteUsers"] = "deleteUsers";
+            }
+            if ($(this).find('#uturn-whitelist-admins').is(":checked")){
+                data_to_send["whitelistAdmins"] = "whitelistAdmins";
             }
 
             // send the ajax

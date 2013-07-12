@@ -2,7 +2,7 @@
 
 ## Version
 
-1.1
+1.2
 
 ## About
 
@@ -54,6 +54,10 @@ UTurn works by listing through all the pages in the wiki and creating a new revi
  * *ext.uturn.css*:  Stylizes the admin page.
 
 ## Changelog 
+
+1.2
+
+ * Ability to automatically whitelist admins and bureaucrats.
 
 1.1
 

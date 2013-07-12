@@ -2,7 +2,7 @@
 
 /*
  * UTurn 
- * v1.1
+ * v1.2
  * 
  * Tomas Reimers
  * 
@@ -29,7 +29,8 @@ $messages['en'] = array(
     'uturn-whitelist-pages-key' => 'Whitelist Pages:',
     'uturn-whitelist-pages-desc' => 'A list of pages to skip, delimited by a "|" (Pipe symbol).',
     'uturn-whitelist-users-key' => 'Whitelist Edits Made By Users:',
-    'uturn-whitelist-users-desc' => 'A list of users whose edits to skip, delimited by a "|" (Pipe symbol).'
+    'uturn-whitelist-users-desc' => 'A list of users whose edits to skip, delimited by a "|" (Pipe symbol).',
+    'uturn-whitelist-admins' => 'Automatically whitelist admins.'
 );
 
 /*
@@ -51,5 +52,6 @@ $messages['qqq'] = array(
     'uturn-whitelist-pages-key' => 'The prompt for which pages to whitelist.',
     'uturn-whitelist-pages-desc' => 'A description of the above, and reminds users to delimit with a pipe symbol.',
     'uturn-whitelist-users-key' => 'The prompt for which users to whitelist.',
-    'uturn-whitelist-users-desc' => 'A description of the above, and reminds users to delimit with a pipe symbol.'
+    'uturn-whitelist-users-desc' => 'A description of the above, and reminds users to delimit with a pipe symbol.',
+    'uturn-whitelist-admins' => 'The prompt whether to automatically whitelist admins.'
 );

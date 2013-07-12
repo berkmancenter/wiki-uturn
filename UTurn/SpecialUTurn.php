@@ -2,7 +2,7 @@
 
 /*
  * UTurn 
- * v1.1
+ * v1.2
  * 
  * Tomas Reimers
  *
@@ -91,7 +91,7 @@ class SpecialUTurn extends SpecialPage {
 
                 '<div class="uturn_option_pair">' .
                     '<div class="uturn_option_title">' . Xml::label( $this->msg('uturn-whitelist-namespaces-key')->text(), 'uturn-whitelist-namespaces' ) . '</div>' .
-                    '<div class="uturn_option_input">' . Xml::input( 'uturnwhitelistnamespaces', 40, '', array( 'id' => 'uturn-whitelist-namespaces' ) ) . '</div>' .
+                    '<div class="uturn_option_input">' . Xml::input( 'uturnwhitelistnamespaces', 40, '', array( 'id' => 'uturn-whitelist-namespaces' ) ) . " " . Xml::check( 'uturnwhitelistadmins', false, array( 'id' => 'uturn-whitelist-admins' ) ) . " " . $this->msg('uturn-whitelist-admins')->text() . '</div>' .
                 '</div>' .
                 '<div class="uturn_option_description">' . $this->msg('uturn-whitelist-namespaces-desc')->text() . '</div>' . 
 
@@ -153,6 +153,11 @@ class SpecialUTurn extends SpecialPage {
         $whitelistPages = $this->parse_value_list($req->getVal( 'whitelistPages' )); 
         $whitelistUsers = $this->parse_value_list($req->getVal( 'whitelistUsers' )); 
 
+        if ($req->getVal( 'whitelistAdmins' ) != NULL){
+            $whitelistUsers = array_merge($whitelistUsers, $this->listAllAdmins());
+            var_dump($whitelistUsers);
+        }
+
         if ( $revertTimestamp > time() ) {
             return "Can't go into the future.";
         }
@@ -161,6 +166,56 @@ class SpecialUTurn extends SpecialPage {
         if ($req->getVal( 'deleteUsers' ) != NULL){
             $this->revertUsers($revertTimestamp);
         }
+    }
+
+    /*
+     * Creates list of administrators and bureaucrats to whitelist
+     */ 
+
+    function listAllAdmins(){
+
+        $toReturn = array();
+
+        $allUsers = array();
+        $aufrom = '';
+        // loop until completion (at which point we will break)
+        // I don't define a limit because at this point the total page count is unknown
+        while ( true ){
+
+            // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
+            set_time_limit( 30 );
+
+            // I only load one page at a time because internal requests are cheap, and there have been memory errors
+            $params = array(
+                'action' => 'query',
+                'list'=> 'allusers',
+                'aulimit'=> '1',
+                'augroup' => 'sysop',
+                'aufrom'=> $aufrom
+            );
+
+            $request = new FauxRequest( $params, true );
+            $api = new ApiMain( $request );
+            $api->execute();
+            $result = $api->getResult();
+            $rootData = $result->getData();
+            
+            $allUsers = $rootData['query']['allusers'];
+            // I implemented a foreach, so that the aulimit above could theoritically be increased
+            foreach ( $allUsers as $user ) {
+                array_push($toReturn, $user["name"]);
+            }
+            if ( array_key_exists( 'query-continue', $rootData ) ) {
+                $aufrom = $rootData['query-continue']['allusers']['aufrom'];
+            }
+            else {
+                // at this point the UTurn is complete, and we can break out of the while(true)
+                break;
+            }
+        }
+
+        return $toReturn;
+
     }
 
     /* 
@@ -182,7 +237,7 @@ class SpecialUTurn extends SpecialPage {
                 'action' => 'query',
                 'list'=> 'allusers',
                 'aulimit'=> '1',
-                'auexcludegroup' => 'bureaucrat|sysop',
+                'auexcludegroup' => 'sysop',
                 'auprop' => 'registration',
                 'aufrom'=> $aufrom
             );
