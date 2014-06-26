@@ -56,7 +56,6 @@ class SpecialUTurn extends SpecialPage {
      */
 
     function showPage() {
-
         $this->setHeaders();
 
         $out = $this->getOutput();
@@ -142,7 +141,6 @@ class SpecialUTurn extends SpecialPage {
      */ 
 
     function UTurn() {
-
         $req = $this->getRequest();
 
         $revertTimestamp = intval( $req->getVal( 't' ) );
@@ -303,7 +301,6 @@ class SpecialUTurn extends SpecialPage {
         $namespaceData = $namespaceResult->getData();
 
         $namespaces = array_keys($namespaceData["query"]["namespaces"]);
-
         foreach ( $namespaces as $namespace ){
 
             // skip media and special namespaces
@@ -357,6 +354,7 @@ class SpecialUTurn extends SpecialPage {
                         );
                         if ( !is_null( $startAt ) ) {
                             $params['rvstartid'] = $startAt;
+//			      $params['rvcontinue'] = $startAt;
                         }
                         $request = new FauxRequest( $params, true );
                         $api = new ApiMain( $request );
@@ -372,7 +370,6 @@ class SpecialUTurn extends SpecialPage {
                             $theRevision = array( 'skip' => 'true' );
                             break;
                         }
-                        
                         // again, the rvlimit could theoretically be increased 
                         foreach( $revisions as $revision ) {
                             $revisionTimestamp = strtotime( $revision['timestamp'] );
@@ -381,12 +378,12 @@ class SpecialUTurn extends SpecialPage {
                                 break;
                             }
                         }
-
                         if ( array_key_exists( 'query-continue', $data ) ) {
-                            $startAt = $data['query-continue']['revisions']['rvstartid'];
+//                            $startAt = $data['query-continue']['revisions']['rvstartid'];
+			      $startAt = $data['query-continue']['revisions']['rvcontinue'];
                         }
                         else if ( is_null( $theRevision ) ) {
-                            // if we got here and neither $data['query-continue'] nor $theRevision are defined, the page didn't exist then 
+                            // if we got here and neither $data['query-continue'] nor $theRevision are defined, the page didn't exist then
                             $theRevision = array( 'delete' => 'true' );
                         }
                     }
@@ -414,10 +411,9 @@ class SpecialUTurn extends SpecialPage {
                         $summary = 'UTurn to ' . $revertTimestamp;
                         $currentPage = WikiPage::newFromID( $page['pageid'] );
                         if ( $deletePages && array_key_exists( 'delete', $theRevision ) ) {
-
                             $errors = array();
                             // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
-                            $currentPage->doDeleteArticle( $summary, false, 0, true, $errors, User::newFromSession() );
+                            $currentPage->doDeleteArticleReal( $summary, false, 0, true, $errors, User::newFromSession() );
 
                             if ($namespace == NS_FILE){
                                 $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
@@ -431,7 +427,8 @@ class SpecialUTurn extends SpecialPage {
                     }
                 }
                 if ( array_key_exists( 'query-continue', $rootData ) ) {
-                    $apfrom = $rootData['query-continue']['allpages']['apfrom'];
+//                    $apfrom = $rootData['query-continue']['allpages']['apfrom'];
+                    $apfrom = $rootData['query-continue']['allpages']['apcontinue'];
                 }
                 else {
                     // at this point the UTurn is complete, and we can break out of the while(true)
