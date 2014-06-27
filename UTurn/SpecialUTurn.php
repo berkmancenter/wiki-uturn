@@ -417,7 +417,7 @@ class SpecialUTurn extends SpecialPage {
 
                             if ($namespace == NS_FILE){
                                 $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
-                                $file->delete( $reason, false );
+                                $file->delete( $summary, false );
                             }
 
                         }
