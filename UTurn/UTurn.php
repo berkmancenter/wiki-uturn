@@ -19,7 +19,7 @@ $wgExtensionCredits['specialpage'][] = array(
     'descriptionmsg' => 'uturn-desc',
     'author'         => 'Tomas Reimers',
     'url'            => 'https://github.com/berkmancenter/wiki-uturn',
-    'version'        => 1.1,
+    'version'        => 1.2,
 );
 
 $dir = dirname( __FILE__ ) . '/';
