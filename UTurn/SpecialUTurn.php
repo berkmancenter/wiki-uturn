@@ -65,7 +65,7 @@ class SpecialUTurn extends SpecialPage {
             Xml::openElement(
                 'form',
                 array(
-                    'action' => $this->getTitle()->getLocalURL( 'action=submit' ),
+                    'action' => $this->getContext()->getTitle()->getLocalURL( 'action=submit' ),
                     'method' => 'post',
                     'id' => 'uturn-form'
                 )
@@ -153,7 +153,6 @@ class SpecialUTurn extends SpecialPage {
 
         if ($req->getVal( 'whitelistAdmins' ) != NULL){
             $whitelistUsers = array_merge($whitelistUsers, $this->listAllAdmins());
-            var_dump($whitelistUsers);
         }
 
         if ( $revertTimestamp > time() ) {
@@ -196,7 +195,7 @@ class SpecialUTurn extends SpecialPage {
             $api = new ApiMain( $request );
             $api->execute();
             $result = $api->getResult();
-            $rootData = $result->getData();
+            $rootData = $result->getResultData();
             
             $allUsers = $rootData['query']['allusers'];
             // I implemented a foreach, so that the aulimit above could theoritically be increased
@@ -244,7 +243,7 @@ class SpecialUTurn extends SpecialPage {
             $api = new ApiMain( $request );
             $api->execute();
             $result = $api->getResult();
-            $rootData = $result->getData();
+            $rootData = $result->getResultData();
             
             $allUsers = $rootData['query']['allusers'];
             // I implemented a foreach, so that the aulimit above could theoritically be increased
@@ -298,13 +297,19 @@ class SpecialUTurn extends SpecialPage {
         $namespaceApi = new ApiMain( $namespaceRequest );
         $namespaceApi->execute();
         $namespaceResult = $namespaceApi->getResult();
-        $namespaceData = $namespaceResult->getData();
+        $namespaceData = $namespaceResult->getResultData();
 
-        $namespaces = array_keys($namespaceData["query"]["namespaces"]);
-        foreach ( $namespaces as $namespace ){
+        $namespaces = $namespaceData["query"]["namespaces"];
+
+        foreach ( $namespaces as $key => $namespace ){
+
+            // skip meta elements
+            if ($key === '_type' || $key === '_element') {
+                continue;
+            }
 
             // skip media and special namespaces
-            if ($namespace < 0 || in_array($namespace, $whitelistNamespaces)){
+            if ($namespace['id'] < 0 || in_array($namespace['id'], $whitelistNamespaces)){
                 continue;
             }
 
@@ -315,13 +320,13 @@ class SpecialUTurn extends SpecialPage {
             while ( true ){
 
                 // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
-                set_time_limit( 30 );
+                set_time_limit( 180 );
 
                 // I only load one page at a time because internal requests are cheap, and there have been memory errors
                 $params = array(
                     'action' => 'query',
                     'list'=> 'allpages',
-                    'apnamespace' => (string) $namespace,
+                    'apnamespace' => (string) $namespace['id'],
                     'aplimit'=> '1',
                     'apfrom'=> $apfrom
                 );
@@ -330,12 +335,11 @@ class SpecialUTurn extends SpecialPage {
                 $api = new ApiMain( $request );
                 $api->execute();
                 $result = $api->getResult();
-                $rootData = $result->getData();
+                $rootData = $result->getResultData();
                 
                 $allPages = $rootData['query']['allpages'];
                 // I implemented a foreach, so that the aplimit above could theoritically be increased
                 foreach ( $allPages as $page ) {
-
                     if ( in_array( $page['title'], $whitelistPages) ){
                         continue;
                     }
@@ -354,13 +358,12 @@ class SpecialUTurn extends SpecialPage {
                         );
                         if ( !is_null( $startAt ) ) {
                             $params['rvstartid'] = $startAt;
-//			      $params['rvcontinue'] = $startAt;
                         }
                         $request = new FauxRequest( $params, true );
                         $api = new ApiMain( $request );
                         $api->execute();
                         $result = $api->getResult();
-                        $data = $result->getData();
+                        $data = $result->getResultData();
                         unset( $result );
 
                         $revisions = $data['query']['pages'][(string)$page['pageid']]['revisions'];
@@ -378,12 +381,11 @@ class SpecialUTurn extends SpecialPage {
                                 break;
                             }
                         }
-                        if ( array_key_exists( 'query-continue', $data ) ) {
-//                            $startAt = $data['query-continue']['revisions']['rvstartid'];
-			      $startAt = $data['query-continue']['revisions']['rvcontinue'];
+                        if ( array_key_exists( 'continue', $data ) ) {
+                            $startAt = explode( '|', $data['continue']['rvcontinue'] )[1];
                         }
                         else if ( is_null( $theRevision ) ) {
-                            // if we got here and neither $data['query-continue'] nor $theRevision are defined, the page didn't exist then
+                            // if we got here and neither $data['continue'] nor $theRevision are defined, the page didn't exist then
                             $theRevision = array( 'delete' => 'true' );
                         }
                     }
@@ -404,8 +406,8 @@ class SpecialUTurn extends SpecialPage {
                             $contentAPI = new ApiMain( $contentRequest );
                             $contentAPI->execute();
                             $contentResult = $contentAPI->getResult();
-                            $contentData = $contentResult->getData();
-                            $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['*'];
+                            $contentData = $contentResult->getResultData();
+                            $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['content'];
                         }
     
                         $summary = 'UTurn to ' . $revertTimestamp;
@@ -422,13 +424,13 @@ class SpecialUTurn extends SpecialPage {
 
                         }
                         else {
-                            $currentPage->doEdit( $content, $summary, EDIT_UPDATE, false, User::newFromSession() );
+                          $currentPage->doEditContent( new WikitextContent($content), $summary, EDIT_UPDATE, false, User::newFromSession() );
                         }
                     }
                 }
-                if ( array_key_exists( 'query-continue', $rootData ) ) {
-//                    $apfrom = $rootData['query-continue']['allpages']['apfrom'];
-                    $apfrom = $rootData['query-continue']['allpages']['apcontinue'];
+
+                if ( array_key_exists( 'continue', $rootData ) ) {
+                    $apfrom = $rootData['continue']['apcontinue'];
                 }
                 else {
                     // at this point the UTurn is complete, and we can break out of the while(true)
