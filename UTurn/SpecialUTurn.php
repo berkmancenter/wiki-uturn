@@ -65,7 +65,7 @@ class SpecialUTurn extends SpecialPage {
             Xml::openElement(
                 'form',
                 array(
-                    'action' => $this->getTitle()->getLocalURL( 'action=submit' ),
+                    'action' => $this->getContext()->getTitle()->getLocalURL( 'action=submit' ),
                     'method' => 'post',
                     'id' => 'uturn-form'
                 )
@@ -153,7 +153,6 @@ class SpecialUTurn extends SpecialPage {
 
         if ($req->getVal( 'whitelistAdmins' ) != NULL){
             $whitelistUsers = array_merge($whitelistUsers, $this->listAllAdmins());
-            var_dump($whitelistUsers);
         }
 
         if ( $revertTimestamp > time() ) {
@@ -196,7 +195,7 @@ class SpecialUTurn extends SpecialPage {
             $api = new ApiMain( $request );
             $api->execute();
             $result = $api->getResult();
-            $rootData = $result->getData();
+            $rootData = $result->getResultData();
             
             $allUsers = $rootData['query']['allusers'];
             // I implemented a foreach, so that the aulimit above could theoritically be increased
@@ -244,7 +243,7 @@ class SpecialUTurn extends SpecialPage {
             $api = new ApiMain( $request );
             $api->execute();
             $result = $api->getResult();
-            $rootData = $result->getData();
+            $rootData = $result->getResultData();
             
             $allUsers = $rootData['query']['allusers'];
             // I implemented a foreach, so that the aulimit above could theoritically be increased
@@ -298,13 +297,19 @@ class SpecialUTurn extends SpecialPage {
         $namespaceApi = new ApiMain( $namespaceRequest );
         $namespaceApi->execute();
         $namespaceResult = $namespaceApi->getResult();
-        $namespaceData = $namespaceResult->getData();
+        $namespaceData = $namespaceResult->getResultData();
 
-        $namespaces = array_keys($namespaceData["query"]["namespaces"]);
-        foreach ( $namespaces as $namespace ){
+        $namespaces = $namespaceData["query"]["namespaces"];
+
+        foreach ( $namespaces as $key => $namespace ){
+
+            // skip meta elements
+            if ($key === '_type' || $key === '_element') {
+                continue;
+            }
 
             // skip media and special namespaces
-            if ($namespace < 0 || in_array($namespace, $whitelistNamespaces)){
+            if ($namespace['id'] < 0 || in_array($namespace['id'], $whitelistNamespaces)){
                 continue;
             }
 
@@ -315,13 +320,13 @@ class SpecialUTurn extends SpecialPage {
             while ( true ){
 
                 // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
-                set_time_limit( 30 );
+                set_time_limit( 180 );
 
                 // I only load one page at a time because internal requests are cheap, and there have been memory errors
                 $params = array(
                     'action' => 'query',
                     'list'=> 'allpages',
-                    'apnamespace' => (string) $namespace,
+                    'apnamespace' => (string) $namespace['id'],
                     'aplimit'=> '1',
                     'apfrom'=> $apfrom
                 );
@@ -330,12 +335,11 @@ class SpecialUTurn extends SpecialPage {
                 $api = new ApiMain( $request );
                 $api->execute();
                 $result = $api->getResult();
-                $rootData = $result->getData();
+                $rootData = $result->getResultData();
                 
                 $allPages = $rootData['query']['allpages'];
                 // I implemented a foreach, so that the aplimit above could theoritically be increased
                 foreach ( $allPages as $page ) {
-
                     if ( in_array( $page['title'], $whitelistPages) ){
                         continue;
                     }
@@ -354,13 +358,12 @@ class SpecialUTurn extends SpecialPage {
                         );
                         if ( !is_null( $startAt ) ) {
                             $params['rvstartid'] = $startAt;
-//			      $params['rvcontinue'] = $startAt;
                         }
                         $request = new FauxRequest( $params, true );
                         $api = new ApiMain( $request );
                         $api->execute();
                         $result = $api->getResult();
-                        $data = $result->getData();
+                        $data = $result->getResultData();
                         unset( $result );
 
                         $revisions = $data['query']['pages'][(string)$page['pageid']]['revisions'];
@@ -378,12 +381,11 @@ class SpecialUTurn extends SpecialPage {
                                 break;
                             }
                         }
-                        if ( array_key_exists( 'query-continue', $data ) ) {
-//                            $startAt = $data['query-continue']['revisions']['rvstartid'];
-			      $startAt = $data['query-continue']['revisions']['rvcontinue'];
+                        if ( array_key_exists( 'continue', $data ) ) {
+                            $startAt = explode( '|', $data['continue']['rvcontinue'] )[1];
                         }
                         else if ( is_null( $theRevision ) ) {
-                            // if we got here and neither $data['query-continue'] nor $theRevision are defined, the page didn't exist then
+                            // if we got here and neither $data['continue'] nor $theRevision are defined, the page didn't exist then
                             $theRevision = array( 'delete' => 'true' );
                         }
                     }
@@ -404,8 +406,8 @@ class SpecialUTurn extends SpecialPage {
                             $contentAPI = new ApiMain( $contentRequest );
                             $contentAPI->execute();
                             $contentResult = $contentAPI->getResult();
-                            $contentData = $contentResult->getData();
-                            $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['*'];
+                            $contentData = $contentResult->getResultData();
+                            $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['content'];
                         }
     
                         $summary = 'UTurn to ' . $revertTimestamp;
@@ -413,7 +415,7 @@ class SpecialUTurn extends SpecialPage {
                         if ( $deletePages && array_key_exists( 'delete', $theRevision ) ) {
                             $errors = array();
                             // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
-                            $currentPage->doDeleteArticleReal( $summary, false, 0, true, $errors, User::newFromSession() );
+                            $this->deletePermanently($currentPage->mTitle);
 
                             if ($namespace == NS_FILE){
                                 $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
@@ -422,13 +424,13 @@ class SpecialUTurn extends SpecialPage {
 
                         }
                         else {
-                            $currentPage->doEdit( $content, $summary, EDIT_UPDATE, false, User::newFromSession() );
+                          $currentPage->doEditContent( new WikitextContent($content), $summary, EDIT_UPDATE, false, User::newFromSession() );
                         }
                     }
                 }
-                if ( array_key_exists( 'query-continue', $rootData ) ) {
-//                    $apfrom = $rootData['query-continue']['allpages']['apfrom'];
-                    $apfrom = $rootData['query-continue']['allpages']['apcontinue'];
+
+                if ( array_key_exists( 'continue', $rootData ) ) {
+                    $apfrom = $rootData['continue']['apcontinue'];
                 }
                 else {
                     // at this point the UTurn is complete, and we can break out of the while(true)
@@ -437,4 +439,180 @@ class SpecialUTurn extends SpecialPage {
             } 
         }
     }
+
+    private function deletePermanently( Title $title ) {
+      $ns = $title->getNamespace();
+      $t = $title->getDBkey();
+      $id = $title->getArticleID();
+      $cats = $title->getParentCategories();
+
+      $dbw = wfGetDB( DB_MASTER );
+
+      $dbw->startAtomic( __METHOD__ );
+
+      /*
+       * First delete entries, which are in direct relation with the page:
+       */
+
+      # Delete redirect...
+      $dbw->delete( 'redirect', [ 'rd_from' => $id ], __METHOD__ );
+
+      # Delete external links...
+      $dbw->delete( 'externallinks', [ 'el_from' => $id ], __METHOD__ );
+
+      # Delete language links...
+      $dbw->delete( 'langlinks', [ 'll_from' => $id ], __METHOD__ );
+
+      if ( $GLOBALS['wgDBtype'] !== "postgres" && $GLOBALS['wgDBtype'] !== "sqlite" ) {
+        # Delete search index...
+        $dbw->delete( 'searchindex', [ 'si_page' => $id ], __METHOD__ );
+      }
+
+      # Delete restrictions for the page
+      $dbw->delete( 'page_restrictions', [ 'pr_page' => $id ], __METHOD__ );
+
+      # Delete page links
+      $dbw->delete( 'pagelinks', [ 'pl_from' => $id ], __METHOD__ );
+
+      # Delete category links
+      $dbw->delete( 'categorylinks', [ 'cl_from' => $id ], __METHOD__ );
+
+      # Delete template links
+      $dbw->delete( 'templatelinks', [ 'tl_from' => $id ], __METHOD__ );
+
+      # Read text entries for all revisions and delete them.
+      $res = $dbw->select( 'revision', 'rev_text_id', "rev_page=$id" );
+
+      foreach ( $res as $row ) {
+        $value = $row->rev_text_id;
+        $dbw->delete( 'text', [ 'old_id' => $value ], __METHOD__ );
+      }
+
+      # In the table 'revision' : Delete all the revision of the page where 'rev_page' = $id
+      $dbw->delete( 'revision', [ 'rev_page' => $id ], __METHOD__ );
+
+      # Delete image links
+      $dbw->delete( 'imagelinks', [ 'il_from' => $id ], __METHOD__ );
+
+      /*
+       * then delete entries which are not in direct relation with the page:
+       */
+
+      # Clean up recentchanges entries...
+      $dbw->delete( 'recentchanges', [
+        'rc_namespace' => $ns,
+        'rc_title' => $t
+      ], __METHOD__ );
+
+      # Read text entries for all archived pages and delete them.
+      $res = $dbw->select( 'archive', 'ar_text_id', [
+        'ar_namespace' => $ns,
+        'ar_title' => $t
+      ] );
+
+      foreach ( $res as $row ) {
+        $value = $row->ar_text_id;
+        $dbw->delete( 'text', [ 'old_id' => $value ], __METHOD__ );
+      }
+
+      # Clean up archive entries...
+      $dbw->delete( 'archive', [
+        'ar_namespace' => $ns,
+        'ar_title' => $t
+      ], __METHOD__ );
+
+      # Clean up log entries...
+      $dbw->delete( 'logging', [
+        'log_namespace' => $ns,
+        'log_title' => $t
+      ], __METHOD__ );
+
+      # Clean up watchlist...
+      $dbw->delete( 'watchlist', [
+        'wl_namespace' => $ns,
+        'wl_title' => $t
+      ], __METHOD__ );
+
+      $dbw->delete( 'watchlist', [
+        'wl_namespace' => MWNamespace::getAssociated( $ns ),
+        'wl_title' => $t
+      ], __METHOD__ );
+
+      # In the table 'page' : Delete the page entry
+      $dbw->delete( 'page', [ 'page_id' => $id ], __METHOD__ );
+
+      /*
+       * If the article belongs to a category, update category counts
+       */
+      if ( !empty( $cats ) ) {
+        foreach ( $cats as $parentcat => $currentarticle ) {
+          $catname = preg_split( '/:/', $parentcat, 2 );
+          $cat = Category::newFromName( $catname[1] );
+          if ( !is_object( $cat ) ) {
+            // Blank error to allow us to continue
+          } else {
+            $cat->refreshCounts();
+          }
+        }
+      }
+
+      /*
+       * If an image is being deleted, some extra work needs to be done
+       */
+      if ( $ns == NS_FILE ) {
+        if ( method_exists( MediaWikiServices::class, 'getRepoGroup' ) ) {
+          // MediaWiki 1.34+
+          $file = MediaWikiServices::getInstance()->getRepoGroup()->findFile( $t );
+        } else {
+          $file = wfFindFile( $t );
+        }
+
+        if ( $file ) {
+          # Get all filenames of old versions:
+          $fields = OldLocalFile::selectFields();
+          $res = $dbw->select( 'oldimage', $fields, [ 'oi_name' => $t ] );
+
+          foreach ( $res as $row ) {
+            $oldLocalFile = OldLocalFile::newFromRow( $row, $file->repo );
+            $path = $oldLocalFile->getArchivePath() . '/' . $oldLocalFile->getArchiveName();
+
+            try {
+              unlink( $path );
+            }
+            catch ( Exception $e ) {
+              return $e->getMessage();
+            }
+          }
+
+          $path = $file->getLocalRefPath();
+
+          try {
+            $file->purgeThumbnails();
+            unlink( $path );
+          } catch ( Exception $e ) {
+            return $e->getMessage();
+          }
+        }
+
+        # Clean the filearchive for the given filename:
+        $dbw->delete( 'filearchive', [ 'fa_name' => $t ], __METHOD__ );
+
+        # Delete old db entries of the image:
+        $dbw->delete( 'oldimage', [ 'oi_name' => $t ], __METHOD__ );
+
+        # Delete archive entries of the image:
+        $dbw->delete( 'filearchive', [ 'fa_name' => $t ], __METHOD__ );
+
+        # Delete image entry:
+        $dbw->delete( 'image', [ 'img_name' => $t ], __METHOD__ );
+
+        // $dbw->endAtomic( __METHOD__ );
+
+        $linkCache = MediaWikiServices::getInstance()->getLinkCache();
+        $linkCache->clear();
+      }
+      $dbw->endAtomic( __METHOD__ );
+      return true;
+    }
 }
+
