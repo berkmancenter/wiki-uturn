@@ -9,6 +9,8 @@
  * Constructor of the special page; also holds the actual function.
  */
 
+ini_set('max_execution_time', '2000');
+
 class SpecialUTurn extends SpecialPage {
 
     /*
@@ -196,7 +198,7 @@ class SpecialUTurn extends SpecialPage {
             $api->execute();
             $result = $api->getResult();
             $rootData = $result->getResultData();
-            
+
             $allUsers = $rootData['query']['allusers'];
             // I implemented a foreach, so that the aulimit above could theoritically be increased
             foreach ( $allUsers as $user ) {
@@ -318,10 +320,6 @@ class SpecialUTurn extends SpecialPage {
             // loop until completion (at which point we will break)
             // I don't define a limit because at this point the total page count is unknown
             while ( true ){
-
-                // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
-                set_time_limit( 180 );
-
                 // I only load one page at a time because internal requests are cheap, and there have been memory errors
                 $params = array(
                     'action' => 'query',
@@ -340,7 +338,7 @@ class SpecialUTurn extends SpecialPage {
                 $allPages = $rootData['query']['allpages'];
                 // I implemented a foreach, so that the aplimit above could theoritically be increased
                 foreach ( $allPages as $page ) {
-                    if ( in_array( $page['title'], $whitelistPages) ){
+                    if ( !is_array($page) || in_array( $page['title'], $whitelistPages) ){
                         continue;
                     }
 
@@ -367,7 +365,7 @@ class SpecialUTurn extends SpecialPage {
                         unset( $result );
 
                         $revisions = $data['query']['pages'][(string)$page['pageid']]['revisions'];
-                        
+
                         // skip if page revisions cannot be accessed
                         if ( !is_array( $revisions ) ){
                             $theRevision = array( 'skip' => 'true' );
@@ -375,6 +373,9 @@ class SpecialUTurn extends SpecialPage {
                         }
                         // again, the rvlimit could theoretically be increased 
                         foreach( $revisions as $revision ) {
+                            if (!is_array($revision)) {
+                                continue;
+                            }
                             $revisionTimestamp = strtotime( $revision['timestamp'] );
                             if ( $revisionTimestamp <= $revertTimestamp || in_array($revision['user'], $whitelistUsers)) {
                                 $theRevision = $revision;
@@ -448,51 +449,49 @@ class SpecialUTurn extends SpecialPage {
 
       $dbw = wfGetDB( DB_MASTER );
 
-      $dbw->startAtomic( __METHOD__ );
-
       /*
        * First delete entries, which are in direct relation with the page:
        */
 
       # Delete redirect...
-      $dbw->delete( 'redirect', [ 'rd_from' => $id ], __METHOD__ );
+      $dbw->delete( 'redirect', [ 'rd_from' => $id ] );
 
       # Delete external links...
-      $dbw->delete( 'externallinks', [ 'el_from' => $id ], __METHOD__ );
+      $dbw->delete( 'externallinks', [ 'el_from' => $id ] );
 
       # Delete language links...
-      $dbw->delete( 'langlinks', [ 'll_from' => $id ], __METHOD__ );
+      $dbw->delete( 'langlinks', [ 'll_from' => $id ] );
 
       if ( $GLOBALS['wgDBtype'] !== "postgres" && $GLOBALS['wgDBtype'] !== "sqlite" ) {
         # Delete search index...
-        $dbw->delete( 'searchindex', [ 'si_page' => $id ], __METHOD__ );
+        $dbw->delete( 'searchindex', [ 'si_page' => $id ] );
       }
 
       # Delete restrictions for the page
-      $dbw->delete( 'page_restrictions', [ 'pr_page' => $id ], __METHOD__ );
+      $dbw->delete( 'page_restrictions', [ 'pr_page' => $id ] );
 
       # Delete page links
-      $dbw->delete( 'pagelinks', [ 'pl_from' => $id ], __METHOD__ );
+      $dbw->delete( 'pagelinks', [ 'pl_from' => $id ] );
 
       # Delete category links
-      $dbw->delete( 'categorylinks', [ 'cl_from' => $id ], __METHOD__ );
+      $dbw->delete( 'categorylinks', [ 'cl_from' => $id ] );
 
       # Delete template links
-      $dbw->delete( 'templatelinks', [ 'tl_from' => $id ], __METHOD__ );
+      $dbw->delete( 'templatelinks', [ 'tl_from' => $id ] );
 
       # Read text entries for all revisions and delete them.
       $res = $dbw->select( 'revision', 'rev_text_id', "rev_page=$id" );
 
       foreach ( $res as $row ) {
         $value = $row->rev_text_id;
-        $dbw->delete( 'text', [ 'old_id' => $value ], __METHOD__ );
+        $dbw->delete( 'text', [ 'old_id' => $value ] );
       }
 
       # In the table 'revision' : Delete all the revision of the page where 'rev_page' = $id
-      $dbw->delete( 'revision', [ 'rev_page' => $id ], __METHOD__ );
+      $dbw->delete( 'revision', [ 'rev_page' => $id ] );
 
       # Delete image links
-      $dbw->delete( 'imagelinks', [ 'il_from' => $id ], __METHOD__ );
+      $dbw->delete( 'imagelinks', [ 'il_from' => $id ] );
 
       /*
        * then delete entries which are not in direct relation with the page:
@@ -502,7 +501,7 @@ class SpecialUTurn extends SpecialPage {
       $dbw->delete( 'recentchanges', [
         'rc_namespace' => $ns,
         'rc_title' => $t
-      ], __METHOD__ );
+      ] );
 
       # Read text entries for all archived pages and delete them.
       $res = $dbw->select( 'archive', 'ar_text_id', [
@@ -512,34 +511,34 @@ class SpecialUTurn extends SpecialPage {
 
       foreach ( $res as $row ) {
         $value = $row->ar_text_id;
-        $dbw->delete( 'text', [ 'old_id' => $value ], __METHOD__ );
+        $dbw->delete( 'text', [ 'old_id' => $value ] );
       }
 
       # Clean up archive entries...
       $dbw->delete( 'archive', [
         'ar_namespace' => $ns,
         'ar_title' => $t
-      ], __METHOD__ );
+      ] );
 
       # Clean up log entries...
       $dbw->delete( 'logging', [
         'log_namespace' => $ns,
         'log_title' => $t
-      ], __METHOD__ );
+      ] );
 
       # Clean up watchlist...
       $dbw->delete( 'watchlist', [
         'wl_namespace' => $ns,
         'wl_title' => $t
-      ], __METHOD__ );
+      ] );
 
       $dbw->delete( 'watchlist', [
         'wl_namespace' => MWNamespace::getAssociated( $ns ),
         'wl_title' => $t
-      ], __METHOD__ );
+      ] );
 
       # In the table 'page' : Delete the page entry
-      $dbw->delete( 'page', [ 'page_id' => $id ], __METHOD__ );
+      $dbw->delete( 'page', [ 'page_id' => $id ] );
 
       /*
        * If the article belongs to a category, update category counts
@@ -551,7 +550,7 @@ class SpecialUTurn extends SpecialPage {
           if ( !is_object( $cat ) ) {
             // Blank error to allow us to continue
           } else {
-            $cat->refreshCounts();
+            DeferredUpdates::addCallableUpdate([$cat, 'refreshCounts' ]);
           }
         }
       }
@@ -560,17 +559,16 @@ class SpecialUTurn extends SpecialPage {
        * If an image is being deleted, some extra work needs to be done
        */
       if ( $ns == NS_FILE ) {
-        if ( method_exists( MediaWikiServices::class, 'getRepoGroup' ) ) {
+        if ( method_exists( MediaWiki\MediaWikiServices::class, 'getRepoGroup' ) ) {
           // MediaWiki 1.34+
-          $file = MediaWikiServices::getInstance()->getRepoGroup()->findFile( $t );
+          $file = MediaWiki\MediaWikiServices::getInstance()->getRepoGroup()->findFile( $t );
         } else {
           $file = wfFindFile( $t );
         }
 
         if ( $file ) {
           # Get all filenames of old versions:
-          $fields = OldLocalFile::selectFields();
-          $res = $dbw->select( 'oldimage', $fields, [ 'oi_name' => $t ] );
+          $res = $dbw->select( 'oldimage', '*', [ 'oi_name' => $t ] );
 
           foreach ( $res as $row ) {
             $oldLocalFile = OldLocalFile::newFromRow( $row, $file->repo );
@@ -595,23 +593,23 @@ class SpecialUTurn extends SpecialPage {
         }
 
         # Clean the filearchive for the given filename:
-        $dbw->delete( 'filearchive', [ 'fa_name' => $t ], __METHOD__ );
+        $dbw->delete( 'filearchive', [ 'fa_name' => $t ] );
 
         # Delete old db entries of the image:
-        $dbw->delete( 'oldimage', [ 'oi_name' => $t ], __METHOD__ );
+        $dbw->delete( 'oldimage', [ 'oi_name' => $t ] );
 
         # Delete archive entries of the image:
-        $dbw->delete( 'filearchive', [ 'fa_name' => $t ], __METHOD__ );
+        $dbw->delete( 'filearchive', [ 'fa_name' => $t ] );
 
         # Delete image entry:
-        $dbw->delete( 'image', [ 'img_name' => $t ], __METHOD__ );
+        $dbw->delete( 'image', [ 'img_name' => $t ] );
 
         // $dbw->endAtomic( __METHOD__ );
 
-        $linkCache = MediaWikiServices::getInstance()->getLinkCache();
+        $linkCache = MediaWiki\MediaWikiServices::getInstance()->getLinkCache();
         $linkCache->clear();
       }
-      $dbw->endAtomic( __METHOD__ );
+
       return true;
     }
 }
