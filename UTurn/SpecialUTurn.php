@@ -227,10 +227,6 @@ class SpecialUTurn extends SpecialPage {
         // loop until completion (at which point we will break)
         // I don't define a limit because at this point the total page count is unknown
         while ( true ){
-
-            // each page takes a while, and if your wiki has enough pages it will go over the PHP execution timelimit
-            set_time_limit( 30 );
-
             // I only load one page at a time because internal requests are cheap, and there have been memory errors
             $params = array(
                 'action' => 'query',
@@ -260,22 +256,21 @@ class SpecialUTurn extends SpecialPage {
 
                             $currentUser = User::newFromSession();
 
-                            $block = new Block(
-                                $user,
-                                $userId,
-                                $currentUser->getId(),
-                                $reason = 'UTurn to ' . $revertTimestamp,
-                                0,
-                                0,
-                                'infinity'
-                            );
+                            $block = new Block([
+                                'user' => $user,
+                                'by' => $currentUser->getId(),
+                                'reason' => 'UTurn to ' . $revertTimestamp,
+                                'expiry' => 'infinity'
+                            ]);
+                            $block->setTarget($user);
                             $block->insert();
                         }
                     }
                 }
             }
-            if ( array_key_exists( 'query-continue', $rootData ) ) {
-                $aufrom = $rootData['query-continue']['allusers']['aufrom'];
+
+            if ( array_key_exists( 'continue', $rootData ) ) {
+                $aufrom = $rootData['continue']['aufrom'];
             }
             else {
                 // at this point the UTurn is complete, and we can break out of the while(true)
