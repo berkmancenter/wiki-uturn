@@ -9,7 +9,7 @@
 
 // can't do anything until the DOM is ready, also encloses my code
 $(document).ready(function (){
-    if (wgCanonicalSpecialPageName == 'UTurn'){
+    if (mw.config.get('wgCanonicalSpecialPageName') == 'UTurn'){
         // rather than submit the page, we will do an AJAX request
         $('#uturn-form').bind('submit', function (ev){
 
@@ -62,7 +62,7 @@ $(document).ready(function (){
             var data_to_send = {
                     action: 'submit',
                     t: timestamp,
-                    editToken: mediaWiki.user.tokens.values.editToken,
+                    editToken: mw.user.tokens.get('csrfToken'),
                     whitelistNamespaces: $(this).find('#uturn-whitelist-namespaces').val(),
                     whitelistPages: $(this).find('#uturn-whitelist-pages').val(),
                     whitelistUsers: $(this).find('#uturn-whitelist-users').val()
