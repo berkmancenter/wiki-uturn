@@ -475,11 +475,11 @@ class SpecialUTurn extends SpecialPage {
       $dbw->delete( 'templatelinks', [ 'tl_from' => $id ] );
 
       # Read text entries for all revisions and delete them.
-      $res = $dbw->select( 'revision', 'rev_text_id', "rev_page=$id" );
+      $resRev = $dbw->select( 'revision', 'rev_id', "rev_page=$id" );
 
-      foreach ( $res as $row ) {
-        $value = $row->rev_text_id;
-        $dbw->delete( 'text', [ 'old_id' => $value ] );
+      foreach ($resRev as $rowRev) {
+        $rev_id = $rowRev->rev_id;
+        $this->removeContentBySlotRevId($rev_id, $dbw);
       }
 
       # In the table 'revision' : Delete all the revision of the page where 'rev_page' = $id
@@ -499,14 +499,14 @@ class SpecialUTurn extends SpecialPage {
       ] );
 
       # Read text entries for all archived pages and delete them.
-      $res = $dbw->select( 'archive', 'ar_text_id', [
+      $res = $dbw->select( 'archive', 'ar_rev_id', [
         'ar_namespace' => $ns,
         'ar_title' => $t
       ] );
 
       foreach ( $res as $row ) {
-        $value = $row->ar_text_id;
-        $dbw->delete( 'text', [ 'old_id' => $value ] );
+        $rev_id = $row->ar_rev_id;
+        $this->removeContentBySlotRevId($rev_id, $dbw);
       }
 
       # Clean up archive entries...
@@ -607,5 +607,21 @@ class SpecialUTurn extends SpecialPage {
 
       return true;
     }
-}
 
+    private function removeContentBySlotRevId($rev_id, $dbw) {
+      $resSlots = $dbw->select( 'slots', 'slot_content_id', "slot_revision_id=$rev_id" );
+
+      foreach ($resSlots as $rowSlot) {
+        $slot_content_id = $rowSlot->slot_content_id;
+
+        $resContent = $dbw->select( 'content', 'content_address', "content_id=$slot_content_id" );
+
+        foreach ($resContent as $rowContent) {
+          $dbw->delete( 'text', [ 'old_id' => str_replace('tt:', '', $rowContent->content_address) ] );
+        }
+
+        $dbw->delete( 'content', [ 'content_id' => $slot_content_id ] );
+        $dbw->delete( 'slots', [ 'slot_content_id' => $slot_content_id ] );
+      }
+    }
+}
