@@ -297,9 +297,7 @@ class SpecialUTurn extends SpecialPage {
         $namespaceData = $namespaceResult->getResultData();
 
         $namespaces = $namespaceData["query"]["namespaces"];
-
         foreach ( $namespaces as $key => $namespace ){
-
             // skip meta elements
             if ($key === '_type' || $key === '_element') {
                 continue;
@@ -320,7 +318,7 @@ class SpecialUTurn extends SpecialPage {
                     'action' => 'query',
                     'list'=> 'allpages',
                     'apnamespace' => (string) $namespace['id'],
-                    'aplimit'=> '1',
+                    'aplimit'=> '10000',
                     'apfrom'=> $apfrom
                 );
 
@@ -329,8 +327,12 @@ class SpecialUTurn extends SpecialPage {
                 $api->execute();
                 $result = $api->getResult();
                 $rootData = $result->getResultData();
-                
+
                 $allPages = $rootData['query']['allpages'];
+                usort($allPages, function ($item1, $item2) {
+                    return $item2['pageid'] <=> $item1['pageid'];
+                });
+
                 // I implemented a foreach, so that the aplimit above could theoritically be increased
                 foreach ( $allPages as $page ) {
                     if ( !is_array($page) || in_array( $page['title'], $whitelistPages) ){
@@ -349,6 +351,7 @@ class SpecialUTurn extends SpecialPage {
                             'rvprop'=> 'timestamp|ids|user',
                             'rvdir' => 'older'
                         );
+
                         if ( !is_null( $startAt ) ) {
                             $params['rvstartid'] = $startAt;
                         }
@@ -357,7 +360,6 @@ class SpecialUTurn extends SpecialPage {
                         $api->execute();
                         $result = $api->getResult();
                         $data = $result->getResultData();
-                        unset( $result );
 
                         $revisions = $data['query']['pages'][(string)$page['pageid']]['revisions'];
 
@@ -385,8 +387,8 @@ class SpecialUTurn extends SpecialPage {
                             $theRevision = array( 'delete' => 'true' );
                         }
                     }
-                    if ( !array_key_exists( 'skip', $theRevision ) ){
 
+                    if ( !array_key_exists( 'skip', $theRevision ) ){
                         if ( !array_key_exists( 'delete', $theRevision ) ) {
                             // lazy load the content to prevent memory overflows
                             $contentParams = array(
@@ -405,7 +407,7 @@ class SpecialUTurn extends SpecialPage {
                             $contentData = $contentResult->getResultData();
                             $content = $contentData['query']['pages'][(string)$page['pageid']]['revisions'][0]['content'];
                         }
-    
+
                         $summary = 'UTurn to ' . $revertTimestamp;
                         $currentPage = WikiPage::newFromID( $page['pageid'] );
                         if ( $deletePages && array_key_exists( 'delete', $theRevision ) ) {
@@ -442,11 +444,15 @@ class SpecialUTurn extends SpecialPage {
       $id = $title->getArticleID();
       $cats = $title->getParentCategories();
 
-      $dbw = wfGetDB( DB_MASTER );
+      $lb = MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancer();
+      $dbw = $lb->getConnectionRef(DB_MASTER);
+      $factory = \MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
       /*
        * First delete entries, which are in direct relation with the page:
        */
+
+      $factory->beginMasterChanges(__METHOD__);
 
       # Delete redirect...
       $dbw->delete( 'redirect', [ 'rd_from' => $id ] );
@@ -599,11 +605,11 @@ class SpecialUTurn extends SpecialPage {
         # Delete image entry:
         $dbw->delete( 'image', [ 'img_name' => $t ] );
 
-        // $dbw->endAtomic( __METHOD__ );
-
         $linkCache = MediaWiki\MediaWikiServices::getInstance()->getLinkCache();
         $linkCache->clear();
       }
+
+      $factory->commitMasterChanges(__METHOD__);
 
       return true;
     }
