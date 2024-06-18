@@ -1,9 +1,5 @@
 # UTurn 
 
-## Version
-
-1.2
-
 ## About
 
 There are a handful of situations when a MediaWiki install has to be locked for some period of time. Unfortunately, many times people forget to lock their wikis; they forget to close registration; they forget to keep moderating. An example might be a course website during the summer: once final exams come around, the professor forgets to close their wiki's registration, or moderate it. Then when they return to it at the start of a new semester, they realize that spam bots have infested it and filled the pages with links and spam.
@@ -18,7 +14,7 @@ UTurn is a standard MediaWiki extension written in PHP with a tiny bit of javasc
 
 Like any other extension, drop the UTurn folder in /extensions; then include the follow line in your LocalSettings.php
 
-    require_once( "$IP/extensions/UTurn/UTurn.php" );
+    wfLoadExtension('UTurn');
 
 ## Usage
 
@@ -50,10 +46,14 @@ UTurn works by listing through all the pages in the wiki and creating a new revi
  * *SpecialUTurn.php*: Main File; contains all UTurn code.
  * *UTurn.alias.php*: Aliases name of special page for other languages.
  * *UTurn.i18n.php*: Internationalization.
- * *UTurn.php*: Metadata and includes all the other files.
+ * *extension.json*: Metadata and includes all the other files.
  * *ext.uturn.css*:  Stylizes the admin page.
 
 ## Changelog 
+
+1.3
+
+ * MediaWiki 1.39 support.
 
 1.2
 
