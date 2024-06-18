@@ -32,8 +32,6 @@ class SpecialUTurn extends SpecialPage {
      */
 
     function execute( $par ) {
-        global $wgRequest, $wgOut, $wgUser;
-
         // check permissions 
         if ( !$this->userCanExecute( $this->getUser() ) ) {
             $this->displayRestrictionError();
