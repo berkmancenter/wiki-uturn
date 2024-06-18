@@ -11,6 +11,8 @@
 
 ini_set('max_execution_time', '2000');
 
+use MediaWiki\Revision\SlotRecord;
+
 class SpecialUTurn extends SpecialPage {
 
     /*
@@ -33,7 +35,7 @@ class SpecialUTurn extends SpecialPage {
         global $wgRequest, $wgOut, $wgUser;
 
         // check permissions 
-        if ( !$this->userCanExecute( $wgUser ) ) {
+        if ( !$this->userCanExecute( $this->getUser() ) ) {
             $this->displayRestrictionError();
             return;
         }
@@ -329,6 +331,10 @@ class SpecialUTurn extends SpecialPage {
                 $rootData = $result->getResultData();
 
                 $allPages = $rootData['query']['allpages'];
+
+                if (isset($allPages['_element'])) {
+                  unset($allPages['_element']);
+                }
                 usort($allPages, function ($item1, $item2) {
                     return $item2['pageid'] <=> $item1['pageid'];
                 });
@@ -413,16 +419,21 @@ class SpecialUTurn extends SpecialPage {
                         if ( $deletePages && array_key_exists( 'delete', $theRevision ) ) {
                             $errors = array();
                             // doDeleteArticleReal was not defined until 1.19, this will need to be revised when 1.18 is less prevalent
-                            $this->deletePermanently($currentPage->mTitle);
+                            $this->deletePermanently($currentPage->getTitle());
 
                             if ($namespace == NS_FILE){
-                                $file = wfFindFile($currentPage->mTitle, array( 'ignoreRedirect' => true ) );
+                                $file = wfFindFile($currentPage->getTitle(), array( 'ignoreRedirect' => true ) );
                                 $file->delete( $summary, false );
                             }
 
                         }
                         else {
-                          $currentPage->doEditContent( new WikitextContent($content), $summary, EDIT_UPDATE, false, User::newFromSession() );
+                            $pageUpdater = $currentPage->newPageUpdater( User::newFromSession() );
+                            $pageUpdater->setContent( SlotRecord::MAIN, new WikitextContent( $content ) );
+                            $pageUpdater->saveRevision(
+                                CommentStoreComment::newUnsavedComment( $summary ),
+                                EDIT_UPDATE
+                            );
                         }
                     }
                 }
@@ -445,14 +456,14 @@ class SpecialUTurn extends SpecialPage {
       $cats = $title->getParentCategories();
 
       $lb = MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancer();
-      $dbw = $lb->getConnectionRef(DB_MASTER);
-      $factory = \MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+      $dbw = $lb->getConnectionRef(DB_PRIMARY);
+      $factory = MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 
       /*
        * First delete entries, which are in direct relation with the page:
        */
 
-      $factory->beginMasterChanges(__METHOD__);
+      $factory->beginPrimaryChanges(__METHOD__);
 
       # Delete redirect...
       $dbw->delete( 'redirect', [ 'rd_from' => $id ] );
@@ -533,8 +544,9 @@ class SpecialUTurn extends SpecialPage {
         'wl_title' => $t
       ] );
 
+      $namespaceInfo = MediaWiki\MediaWikiServices::getInstance()->getNamespaceInfo();
       $dbw->delete( 'watchlist', [
-        'wl_namespace' => MWNamespace::getAssociated( $ns ),
+        'wl_namespace' => $namespaceInfo->getAssociated( $ns ),
         'wl_title' => $t
       ] );
 
@@ -609,7 +621,7 @@ class SpecialUTurn extends SpecialPage {
         $linkCache->clear();
       }
 
-      $factory->commitMasterChanges(__METHOD__);
+      $factory->commitPrimaryChanges(__METHOD__);
 
       return true;
     }
