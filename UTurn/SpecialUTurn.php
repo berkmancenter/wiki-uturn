@@ -2,16 +2,13 @@
 
 /*
  * UTurn 
- * v1.2
  * 
  * Tomas Reimers
  *
  * Constructor of the special page; also holds the actual function.
  */
 
-ini_set('max_execution_time', '2000');
-
-use MediaWiki\Revision\SlotRecord;
+ini_set('max_execution_time', '20000');
 
 class SpecialUTurn extends SpecialPage {
 
@@ -200,12 +197,13 @@ class SpecialUTurn extends SpecialPage {
             $rootData = $result->getResultData();
 
             $allUsers = $rootData['query']['allusers'];
+            unset($allUsers['_element']);
             // I implemented a foreach, so that the aulimit above could theoritically be increased
             foreach ( $allUsers as $user ) {
                 array_push($toReturn, $user["name"]);
             }
-            if ( array_key_exists( 'query-continue', $rootData ) ) {
-                $aufrom = $rootData['query-continue']['allusers']['aufrom'];
+            if ( array_key_exists( 'continue', $rootData ) ) {
+                $aufrom = $rootData['continue']['aufrom'];
             }
             else {
                 // at this point the UTurn is complete, and we can break out of the while(true)
@@ -284,6 +282,21 @@ class SpecialUTurn extends SpecialPage {
      */ 
 
     function revertPages($revertTimestamp, $deletePages, $whitelistNamespaces, $whitelistPages, $whitelistUsers){
+        $localSettingsFilePath = null;
+        $user = User::newFromSession();
+
+        // Get all included files
+        $includedFiles = get_included_files();
+
+        // Filter files that contain 'sites' and 'LocalSettings.php'
+        $filteredFiles = array_filter($includedFiles, function($file) {
+            return stripos($file, 'sites') !== false && stripos($file, 'LocalSettings.php') !== false;
+        });
+
+        if (count($filteredFiles) > 0) {
+          $localSettingsFilePath = reset($filteredFiles);
+        }
+
         // get namespaces
         $namespaceParams = array(
             'action' => 'query',
@@ -318,7 +331,7 @@ class SpecialUTurn extends SpecialPage {
                     'action' => 'query',
                     'list'=> 'allpages',
                     'apnamespace' => (string) $namespace['id'],
-                    'aplimit'=> '10000',
+                    'aplimit'=> '1000',
                     'apfrom'=> $apfrom
                 );
 
@@ -339,6 +352,8 @@ class SpecialUTurn extends SpecialPage {
 
                 // I implemented a foreach, so that the aplimit above could theoritically be increased
                 foreach ( $allPages as $page ) {
+                    $content = '';
+
                     if ( !is_array($page) || in_array( $page['title'], $whitelistPages) ){
                         continue;
                     }
@@ -372,6 +387,7 @@ class SpecialUTurn extends SpecialPage {
                             $theRevision = array( 'skip' => 'true' );
                             break;
                         }
+
                         // again, the rvlimit could theoretically be increased 
                         foreach( $revisions as $revision ) {
                             if (!is_array($revision)) {
@@ -426,12 +442,18 @@ class SpecialUTurn extends SpecialPage {
 
                         }
                         else {
-                            $pageUpdater = $currentPage->newPageUpdater( User::newFromSession() );
-                            $pageUpdater->setContent( SlotRecord::MAIN, new WikitextContent( $content ) );
-                            $pageUpdater->saveRevision(
-                                CommentStoreComment::newUnsavedComment( $summary ),
-                                EDIT_UPDATE
-                            );
+                          $title = $currentPage->getTitle()->getPrefixedDBkey();
+                          $output = '';
+                          $contentFile = '/tmp/' . bin2hex(random_bytes(8));
+                          file_put_contents($contentFile, $content);
+                          $conf = '';
+                          if ($localSettingsFilePath) {
+                            $conf = "--conf $localSettingsFilePath";
+                          }
+                          $backgroundJobCommand = "php maintenance/edit.php -u " . $user->getName() . " -s \"$summary\" -m \"$title\" $conf < $contentFile";
+                          exec($backgroundJobCommand, $output);
+                          unlink($contentFile);
+
                         }
                     }
                 }
