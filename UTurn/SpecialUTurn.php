@@ -442,6 +442,7 @@ class SpecialUTurn extends SpecialPage {
 
                         }
                         else {
+                          // To avoid memory leaks from the saveRevision, we need to use a background job to edit the page
                           $title = $currentPage->getTitle()->getPrefixedDBkey();
                           $output = '';
                           $contentFile = '/tmp/' . bin2hex(random_bytes(8));
@@ -453,7 +454,6 @@ class SpecialUTurn extends SpecialPage {
                           $backgroundJobCommand = "php maintenance/edit.php -u " . $user->getName() . " -s \"$summary\" -m \"$title\" $conf < $contentFile";
                           exec($backgroundJobCommand, $output);
                           unlink($contentFile);
-
                         }
                     }
                 }
