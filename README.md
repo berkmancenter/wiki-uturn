@@ -79,6 +79,33 @@ UTurn works by listing through all the pages in the wiki and creating a new revi
 ## Contributors
 
 <!-- readme: contributors -start -->
+<table>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/tomasreimers">
+                    <img src="https://avatars.githubusercontent.com/u/1188925?v=4" width="100;" alt="tomasreimers"/>
+                    <br />
+                    <sub><b>Tomas Reimers</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/peter-hank">
+                    <img src="https://avatars.githubusercontent.com/u/2022788?v=4" width="100;" alt="peter-hank"/>
+                    <br />
+                    <sub><b>Peter Hankiewicz</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/jsdiaz">
+                    <img src="https://avatars.githubusercontent.com/u/1263804?v=4" width="100;" alt="jsdiaz"/>
+                    <br />
+                    <sub><b>jsdiaz</b></sub>
+                </a>
+            </td>
+		</tr>
+	<tbody>
+</table>
 <!-- readme: contributors -end -->
 
 ## Copyright and License
