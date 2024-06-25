@@ -34,14 +34,6 @@ This will refresh the search index, incorporating the changes brought by the ext
 
  * [*Reducing the Size of the Database*](http://www.mediawiki.org/wiki/Manual:Reduce_size_of_the_database): Removing/archiving deleted pages from the database and can shrink it significantly. 
 
-## Lookback 
-
-[https://github.com/tomasreimers/wiki-lookback](https://github.com/tomasreimers/wiki-lookback)
-
-Lookback is a [MediaWiki Gadget](http://www.mediawiki.org/wiki/Extension:Gadgets) that allows you to view how a wiki was at a previous point in time (without UTurning it). 
-
-Lookback is useful to preview a wiki before you decide to UTurn it.
-
 ## Details
 
 UTurn works by listing through all the pages in the wiki and creating a new revision that matches the text of the page at the time you are UTurning to.
