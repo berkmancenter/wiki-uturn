@@ -20,6 +20,14 @@ Like any other extension, drop the UTurn folder in /extensions; then include the
 
 Once installed, simply visit `myWiki/Special:UTurn` while logged in as a sysop to UTurn the wiki.
 
+After using the extension, you might want to rebuild the search index to ensure optimal performance and accuracy. To do this, use the following command in your terminal:
+
+```
+php maintenance/rebuildtextindex.php
+```
+
+This will refresh the search index, incorporating the changes brought by the extension. This may take several hours, depending on the database size and server configuration. 
+
 ## Maintenance Scripts of Interest
 
  * [*Cleanup Titles*](http://www.mediawiki.org/wiki/Manual:CleanupTitles.php): If you are having trouble deleting pages with strange titles (UTF-8 sequences), as described here: www.gossamer-threads.com/lists/wiki/mediawiki/274451, it is likely that the titles need to be cleaned up.
