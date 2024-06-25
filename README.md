@@ -78,7 +78,8 @@ UTurn works by listing through all the pages in the wiki and creating a new revi
 
 ## Contributors
 
- * Tomas Reimers
+<!-- readme: contributors -start -->
+<!-- readme: contributors -end -->
 
 ## Copyright and License
 
